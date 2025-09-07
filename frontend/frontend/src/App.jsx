@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
 export default function App() {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0,10))
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [department, setDepartment] = useState('')
   const [seller, setSeller] = useState('')
   const [items, setItems] = useState([])
@@ -65,7 +65,7 @@ export default function App() {
     window.open(`/api/reports/${reportId}/export/csv`, '_blank')
   }
 
-  const total = items.reduce((s,i) => s + ((i.quantity || 0) * (i.price || 0)), 0)
+  const total = items.reduce((s, i) => s + ((i.quantity || 0) * (i.price || 0)), 0)
 
   return (
     <div className="container">
@@ -75,9 +75,9 @@ export default function App() {
       </div>
 
       <div className="controls">
-        <label>Дата: <input type="date" value={date} onChange={e=>setDate(e.target.value)} /></label>
-        <label>Відділ: <input value={department} onChange={e=>setDepartment(e.target.value)} placeholder="Назва відділу" /></label>
-        <label>Продавець: <input value={seller} onChange={e=>setSeller(e.target.value)} placeholder="Ім'я продавця" /></label>
+        <label>Дата: <input type="date" value={date} onChange={e => setDate(e.target.value)} /></label>
+        <label>Відділ: <input value={department} onChange={e => setDepartment(e.target.value)} placeholder="Назва відділу" /></label>
+        <label>Продавець: <input value={seller} onChange={e => setSeller(e.target.value)} placeholder="Ім'я продавця" /></label>
 
         <button className="btn" onClick={addRow}>Додати рядок</button>
         <button className="btn primary" onClick={saveReport} disabled={loading}>{loading ? 'Збереження...' : 'Зберегти'}</button>
@@ -93,14 +93,14 @@ export default function App() {
         <tbody>
           {items.map((it, idx) => (
             <tr key={idx}>
-              <td style={{width:40}}>{it.position_no}</td>
-              <td><input value={it.volume} onChange={e=>updateRow(idx,{volume:e.target.value})} /></td>
-              <td><input value={it.bottle} onChange={e=>updateRow(idx,{bottle:e.target.value})} /></td>
-              <td><input value={it.color} onChange={e=>updateRow(idx,{color:e.target.value})} /></td>
-              <td style={{width:100}}><input type="number" value={it.quantity} onChange={e=>updateRow(idx,{quantity: parseFloat(e.target.value || '0')})} /></td>
-              <td style={{width:100}}><input type="number" value={it.price} onChange={e=>updateRow(idx,{price: parseFloat(e.target.value || '0')})} /></td>
-              <td style={{width:110}}>{((it.sum||0)).toFixed(2)}</td>
-              <td><input value={it.remark} onChange={e=>updateRow(idx,{remark:e.target.value})} /></td>
+              <td style={{ width: 40 }}>{it.position_no}</td>
+              <td><input value={it.volume} onChange={e => updateRow(idx, { volume: e.target.value })} /></td>
+              <td><input value={it.bottle} onChange={e => updateRow(idx, { bottle: e.target.value })} /></td>
+              <td><input value={it.color} onChange={e => updateRow(idx, { color: e.target.value })} /></td>
+              <td style={{ width: 100 }}><input type="number" value={it.quantity} onChange={e => updateRow(idx, { quantity: parseFloat(e.target.value || '0') })} /></td>
+              <td style={{ width: 100 }}><input type="number" value={it.price} onChange={e => updateRow(idx, { price: parseFloat(e.target.value || '0') })} /></td>
+              <td style={{ width: 110 }}>{((it.sum || 0)).toFixed(2)}</td>
+              <td><input value={it.remark} onChange={e => updateRow(idx, { remark: e.target.value })} /></td>
             </tr>
           ))}
         </tbody>
