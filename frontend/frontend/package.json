@@ -1,7 +1,8 @@
 {
   "name": "frontend",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
+  "homepage": "https://volodymyr-kushnir27.github.io/parfumNotebook",
   "type": "module",
   "scripts": {
     "dev": "vite",
