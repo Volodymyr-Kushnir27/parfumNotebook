@@ -5,15 +5,17 @@ import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import authRouter from "./auth.js"; 
 
 const app = express();
 const PORT = 4000;
-const SECRET = "supersecret"; // заміни на свій ключ
+const SECRET = "supersecret"; // твій JWT секрет
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use("/api", authRouter);
 
-// DB init
+// --- DB init ---
 const dbPromise = open({
   filename: "./data.db",
   driver: sqlite3.Database,
@@ -21,26 +23,35 @@ const dbPromise = open({
 
 async function initDb() {
   const db = await dbPromise;
+
+  // Таблиця користувачів
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT,
-      phone TEXT UNIQUE,
+      email TEXT UNIQUE,
       password TEXT
     );
   `);
+
+  // Таблиця звітів
   await db.exec(`
     CREATE TABLE IF NOT EXISTS reports (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      date TEXT NOT NULL UNIQUE,
+      user_id INTEGER,
+      date TEXT,
       department TEXT,
       seller TEXT,
       prevDayBalance REAL,
       cashless REAL,
       remaining REAL,
-      safeTerminal REAL
+      safeTerminal REAL,
+      UNIQUE(user_id, date),
+      FOREIGN KEY(user_id) REFERENCES users(id)
     );
   `);
+
+  // Таблиця items
   await db.exec(`
     CREATE TABLE IF NOT EXISTS items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,178 +64,187 @@ async function initDb() {
       price REAL,
       sum REAL,
       remark TEXT,
-      FOREIGN KEY (report_id) REFERENCES reports(id)
+      FOREIGN KEY(report_id) REFERENCES reports(id)
     );
   `);
+
+  // Таблиця tasks
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      report_id INTEGER,
+      text TEXT,
+      done INTEGER,
+      FOREIGN KEY(report_id) REFERENCES reports(id)
+    );
+  `);
+
+  // Таблиця tester_items
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS tester_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      report_id INTEGER,
+      text TEXT,
+      quantity REAL,
+      FOREIGN KEY(report_id) REFERENCES reports(id)
+    );
+  `);
+
+  console.log("✅ DB initialized");
 }
+
 initDb();
 
-// Middleware auth
-function authMiddleware(req, res, next) {
+// --- Middleware auth ---
+async function authMiddleware(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader?.split(" ")[1];
   if (!token) return res.sendStatus(401);
-  jwt.verify(token, SECRET, (err, user) => {
+
+  jwt.verify(token, SECRET, async (err, payload) => {
     if (err) return res.sendStatus(403);
+    const db = await dbPromise;
+    const user = await db.get("SELECT * FROM users WHERE email=?", payload.email);
+    if (!user) return res.sendStatus(403);
     req.user = user;
     next();
   });
 }
 
-// ✅ Реєстрація
-app.post("/api/register", async (req, res) => {
-  const { name, phone, password } = req.body;
-  if (!name || !phone || !password) {
+// --- Registration ---
+// --- Reset password ---
+app.post("/api/reset-password", async (req, res) => {
+   console.log("🔑 Reset-password запит отримано:", req.body);
+  const { email, newPassword } = req.body;
+  if (!email || !newPassword)
     return res.status(400).json({ message: "Заповніть всі поля" });
-  }
-  const db = await dbPromise;
+
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await db.run(
-      "INSERT INTO users (name, phone, password) VALUES (?,?,?)",
-      name,
-      phone,
-      hashedPassword
-    );
-    const token = jwt.sign({ phone }, SECRET, { expiresIn: "1d" });
-    res.json({ token, name });
+    const db = await dbPromise;
+    const user = await db.get("SELECT * FROM users WHERE email=?", email);
+    if (!user) return res.status(404).json({ message: "Користувача не знайдено" });
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await db.run("UPDATE users SET password=? WHERE email=?", hashed, email);
+
+    res.json({ message: "Пароль успішно оновлено" });
   } catch (err) {
-    if (err.message.includes("UNIQUE")) {
-      res.status(409).json({ message: "Користувач вже існує" });
-    } else {
-      res.status(500).json({ message: "Помилка сервера" });
-    }
+    console.error("Reset password error:", err);
+    res.status(500).json({ message: "Помилка сервера" });
   }
 });
 
-// ✅ Логін
+
+
+// --- Save ---
+
 app.post("/api/login", async (req, res) => {
-  const { phone, password } = req.body;
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ message: "Заповніть всі поля" });
+
   const db = await dbPromise;
-  const user = await db.get("SELECT * FROM users WHERE phone=?", phone);
+  const user = await db.get("SELECT * FROM users WHERE email=?", email);
   if (!user) return res.status(400).json({ message: "Користувача не знайдено" });
 
-  const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid) return res.status(400).json({ message: "Невірний пароль" });
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) return res.status(400).json({ message: "Невірний пароль" });
 
-  const token = jwt.sign({ phone }, SECRET, { expiresIn: "1d" });
+  const token = jwt.sign({ email }, SECRET, { expiresIn: "1d" });
   res.json({ token, name: user.name });
 });
 
-// ✅ Хто я
-app.get("/api/me", authMiddleware, async (req, res) => {
-  res.json({ user: req.user });
-});
-
-// ✅ Отримати звіт за датою
-app.get("/api/reports", authMiddleware, async (req, res) => {
-  const { date } = req.query;
-  const db = await dbPromise;
-  const report = await db.get("SELECT * FROM reports WHERE date=?", date);
-  if (!report) return res.status(404).end();
-  const items = await db.all("SELECT * FROM items WHERE report_id=?", report.id);
-  res.json({ report, items });
-});
-
-// ✅ Отримати всі звіти
-app.get("/api/reports/all", authMiddleware, async (req, res) => {
-  const db = await dbPromise;
-  const reports = await db.all("SELECT * FROM reports ORDER BY date DESC");
-  res.json(reports);
-});
-
-// ✅ Зберегти/оновити звіт
+// --- Get last report ---
+// --- GET last report ---
+// --- POST save / update report ---
 app.post("/api/reports", authMiddleware, async (req, res) => {
-  const {
-    date,
-    department,
-    seller,
-    items,
-    prevDayBalance,
-    cashless,
-    remaining,
-    safeTerminal,
-  } = req.body;
-  const db = await dbPromise;
+  try {
+    const { date, department, seller, items = [], tasks = [], testerWriteOffItems = [], prevDayBalance, cashless, remaining, safeTerminal } = req.body;
+    if (!date) return res.status(400).json({ message: "Не вказана дата" });
 
-  let report = await db.get("SELECT * FROM reports WHERE date=?", date);
-  if (report) {
-    await db.run(
-      "UPDATE reports SET department=?, seller=?, prevDayBalance=?, cashless=?, remaining=?, safeTerminal=? WHERE id=?",
-      department,
-      seller,
-      prevDayBalance,
-      cashless,
-      remaining,
-      safeTerminal,
-      report.id
-    );
-    await db.run("DELETE FROM items WHERE report_id=?", report.id);
-  } else {
+    const db = await dbPromise;
+
+    // Видаляємо старий звіт, якщо він існує
+    const oldReport = await db.get("SELECT * FROM reports WHERE user_id=? AND date=?", req.user.id, date);
+    if (oldReport) {
+      await db.run("DELETE FROM items WHERE report_id=?", oldReport.id);
+      await db.run("DELETE FROM tasks WHERE report_id=?", oldReport.id);
+      await db.run("DELETE FROM tester_items WHERE report_id=?", oldReport.id);
+      await db.run("DELETE FROM reports WHERE id=?", oldReport.id);
+    }
+
+    // Створюємо новий звіт
     const result = await db.run(
-      "INSERT INTO reports (date, department, seller, prevDayBalance, cashless, remaining, safeTerminal) VALUES (?,?,?,?,?,?,?)",
-      date,
-      department,
-      seller,
-      prevDayBalance,
-      cashless,
-      remaining,
-      safeTerminal
+      `INSERT INTO reports (user_id, date, department, seller, prevDayBalance, cashless, remaining, safeTerminal)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      req.user.id, date, department || "", seller || "",
+      Number(prevDayBalance || 0), Number(cashless || 0),
+      Number(remaining || 0), Number(safeTerminal || 0)
     );
-    report = { id: result.lastID, date, department, seller };
-  }
 
-  for (const it of items) {
-    await db.run(
-      `INSERT INTO items (report_id, position_no, volume, bottle, color, quantity, price, sum, remark)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
-      report.id,
-      it.position_no,
-      it.volume,
-      it.bottle,
-      it.color,
-      it.quantity,
-      it.price,
-      it.sum,
-      it.remark
-    );
-  }
+    const reportId = result.lastID;
 
-  res.json({ report });
+    // Додаємо items
+    for (const it of items) {
+      await db.run(
+        `INSERT INTO items (report_id, position_no, volume, bottle, color, quantity, price, sum, remark)
+         VALUES (?,?,?,?,?,?,?,?,?)`,
+        reportId, Number(it.position_no) || 0, it.volume || "", it.bottle || "",
+        it.color || "", Number(it.quantity) || 0, Number(it.price) || 0,
+        Number(it.sum) || 0, it.remark || ""
+      );
+    }
+
+    // Додаємо tasks
+    for (const t of tasks) {
+      await db.run(`INSERT INTO tasks (report_id, text, done) VALUES (?,?,?)`, reportId, t.text || "", t.done ? 1 : 0);
+    }
+
+    // Додаємо tester_items
+    for (const t of testerWriteOffItems) {
+      await db.run(`INSERT INTO tester_items (report_id, text, quantity) VALUES (?,?,?)`, reportId, t.text || "", Number(t.quantity) || 0);
+    }
+
+    res.json({ report: { id: reportId } });
+  } catch (err) {
+    console.error("Save report error:", err);
+    res.status(500).json({ message: err.message });
+  }
 });
 
-// ✅ Видалити звіт
+
+
+
+
+// --- Export CSV ---
+app.get("/api/reports", authMiddleware, async (req, res) => {
+ 
+
+  const { date } = req.query;
+   console.log("Fetching report for user:", req.user.id, "date:", date);
+  if (!date) return res.status(400).json({ message: "Не вказана дата" });
+
+  const db = await dbPromise;
+  const report = await db.get("SELECT * FROM reports WHERE user_id=? AND date=?", [req.user.id, date]);
+  if (!report) return res.status(404).json({ message: "Звіт не знайдено" });
+
+  const items = await db.all("SELECT * FROM items WHERE report_id=?", report.id);
+  const tasks = await db.all("SELECT * FROM tasks WHERE report_id=?", report.id);
+  const testerItems = await db.all("SELECT * FROM tester_items WHERE report_id=?", report.id);
+
+  res.json({ report, items, tasks, testerItems });
+});
+
+
+// --- Delete report ---
 app.delete("/api/reports/:id", authMiddleware, async (req, res) => {
   const db = await dbPromise;
   await db.run("DELETE FROM items WHERE report_id=?", req.params.id);
+  await db.run("DELETE FROM tasks WHERE report_id=?", req.params.id);
+  await db.run("DELETE FROM tester_items WHERE report_id=?", req.params.id);
   await db.run("DELETE FROM reports WHERE id=?", req.params.id);
   res.json({ success: true });
 });
 
-// ✅ Експорт у CSV
-app.get("/api/reports/:id/export/csv", async (req, res) => {
-  const db = await dbPromise;
-  const report = await db.get("SELECT * FROM reports WHERE id=?", req.params.id);
-  if (!report) return res.status(404).end();
-  const items = await db.all("SELECT * FROM items WHERE report_id=?", report.id);
+app.listen(PORT, () => console.log(`✅ Backend running at http://localhost:${PORT}`));
 
-  const header = "№;Об'єм;Флакон;Колір;К-сть;Ціна;Сума;Примітка\n";
-  const rows = items
-    .map(
-      (it) =>
-        `${it.position_no};${it.volume || ""};${it.bottle || ""};${it.color || ""};${it.quantity};${it.price};${it.sum};${it.remark || ""}`
-    )
-    .join("\n");
-
-  const csv = header + rows;
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename=report_${report.date}.csv`
-  );
-  res.send(csv);
-});
-
-app.listen(PORT, () => {
-  console.log(`✅ Backend running at http://localhost:${PORT}`);
-});

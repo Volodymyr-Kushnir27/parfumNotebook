@@ -1,62 +1,159 @@
-.login-wrapper {
-  max-width: 400px;
-  margin: 40px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  background: #fdfdfd;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+/* --- LoginPage.css --- */
+
+/* --- Основні стилі для сторінки --- */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fa;
+  color: #333;
+  margin: 0;
+  padding: 0;
 }
 
-.login-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+h1 {
+  color: #1f3c88;
+  font-size: 28px;
   margin-bottom: 20px;
 }
 
-.login-header h1 {
-  font-size: 20px;
-  margin: 0;
-}
-
-.tab-buttons button {
-  margin-left: 10px;
-  padding: 6px 12px;
-  border: none;
-  background: #e0e0e0;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.tab-buttons button.active {
-  background: #4caf50;
-  color: white;
-}
-
-.login-form {
+/* --- Контейнер форми --- */
+form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  background-color: #fff;
+  padding: 25px 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
-.login-form input {
-  padding: 8px;
+/* --- Інпути --- */
+/* --- Головний контейнер --- */
+.login-container {
+  max-width: 400px;
+  margin: 50px auto;
+  text-align: center;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+
+
+div[style*="max-width: 400px"] {
+  margin: 50px auto;
+  text-align: center;
+  padding: 0 10px; /* для великих і малих екранів */
+  box-sizing: border-box;
+}
+
+.login-container input[type="text"],
+.login-container input[type="email"],
+.login-container input[type="password"] {
+  width: 100% !important;
+  padding: 10px 12px;
+  border-radius: 8px;
   border: 1px solid #ccc;
-  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
 }
 
-.login-form button {
-  padding: 10px;
-  background: #4caf50;
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  outline: none;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box; 
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border-color: #1f3c88;
+  box-shadow: 0 0 5px rgba(31, 60, 136, 0.3);
+}
+
+/* --- Кнопки --- */
+button {
+  padding: 10px 15px;
   border: none;
-  border-radius: 6px;
-  color: white;
-  font-weight: bold;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.error {
-  color: red;
-  margin-top: 10px;
+button:hover {
+  opacity: 0.9;
+}
+
+button[type="submit"] {
+  background-color: #1f3c88;
+  color: #fff;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #1f3c88;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.link-btn:hover {
+  color: #f4a261;
+}
+
+/* --- Повідомлення про помилки та успіх --- */
+p {
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+p[style*="color: red"] {
+  color: #e63946;
+}
+
+p[style*="color: green"] {
+  color: #2a9d8f;
+  font-weight: 500;
+}
+
+/* --- Таймер для коду --- */
+p.timer {
+  font-size: 14px;
+  color: #1f3c88;
+  font-weight: 500;
+  margin-top: -6px;
+}
+
+/* --- Головний контейнер --- */
+
+
+/* --- Мобільна адаптивність --- */
+@media (max-width: 500px) {
+  form {
+    padding: 20px 10px; /* зменшений padding для маленьких екранів */
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"] {
+    font-size: 13px;
+  }
+
+  button[type="submit"] {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
 }

@@ -1,71 +1,186 @@
-.dashboard-container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* --- Основні стилі --- */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fa;
+  color: #333;
+  margin: 0;
+  padding: 0;
 }
 
-.dashboard-header {
+.container {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* --- Хедер --- */
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 20px;
+}
+
+.header h2 {
+  margin: 0;
+  color: #1f3c88;
 }
 
 .header-buttons button {
-  margin-left: 0.5rem;
+  margin-left: 10px;
 }
 
+/* --- Кнопки --- */
 .btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ccc;
-  background: #f5f5f5;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.btn:hover {
+  opacity: 0.85;
 }
 
 .btn.primary {
-  background: #4caf50;
-  color: white;
-  border: none;
+  background-color: #1f3c88;
+  color: #fff;
 }
 
 .btn.red {
-  background: #f44336;
-  color: white;
-  border: none;
+  background-color: #e63946;
+  color: #fff;
 }
 
-.controls {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
+.btn.small {
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
+/* --- Форми та інпути --- */
+input[type="text"],
+input[type="number"],
+input[type="date"] {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  outline: none;
+  width: 150px;
+  transition: border 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus {
+  border-color: #1f3c88;
+}
+
+/* --- Загальні поля --- */
 .controls label {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.9rem;
+  display: inline-block;
+  margin-right: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
 }
 
+.prev-day-balance {
+  margin: 15px 0;
+}
+
+.yellow-label {
+  font-weight: 600;
+  color: #f4a261;
+}
+
+/* --- Таблиця --- */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
+  margin-top: 15px;
+  margin-bottom: 15px;
 }
 
-table th, table td {
-  border: 1px solid #ccc;
-  padding: 0.3rem 0.5rem;
+table th,
+table td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
   text-align: left;
 }
 
-table input {
-  width: 100%;
-  box-sizing: border-box;
+table th {
+  background-color: #f0f3f8;
+  color: #333;
+}
+
+table tr:hover {
+  background-color: #f9f9f9;
 }
 
 .summary {
-  margin-top: 1rem;
-  font-weight: bold;
-  text-align: right;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.summary div {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* --- Задачі --- */
+.tasks, .tester-writeoff {
+  margin-bottom: 20px;
+}
+
+.tasks h3, .tester-writeoff h3 {
+  margin-bottom: 10px;
+  color: #1f3c88;
+}
+
+.tasks ul, .tester-writeoff ul {
+  list-style: none;
+  padding: 0;
+}
+
+.tasks li, .tester-writeoff li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.tasks li input[type="text"],
+.tester-writeoff li input[type="text"],
+.tester-writeoff li input[type="number"] {
+  margin-left: 6px;
+}
+
+/* --- Фінанси --- */
+.financials label {
+  display: inline-block;
+  margin-right: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+/* --- Адаптивність --- */
+@media (max-width: 768px) {
+  .controls label, .financials label {
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  table th, table td {
+    padding: 6px;
+  }
+
+  input[type="text"], input[type="number"], input[type="date"] {
+    width: 100%;
+  }
 }
